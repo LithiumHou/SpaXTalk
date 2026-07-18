@@ -1,0 +1,47 @@
+Package: SpaXTalk
+Title: R package for identifying and quantifying crosstalk pathways using spatial trancriptomics data
+Version: 0.1.0
+Authors@R: 
+    person("Jiawen", "Hou", email = "lithiumhou@gmail.com", role = c("aut", "cre"))
+Depends: R (>= 4.3.1)
+Imports:
+    alluvial,
+    circlize,
+    colorspace,
+    ComplexHeatmap,
+    dplyr,
+    forcats,
+    future,
+    future.apply,
+    ggforce,
+    ggnewscale,
+    ggplot2,
+    ggraph,
+    glmnet,
+    ggrepel,
+    grDevices,
+    grid,
+    igraph,
+    Matrix,
+    methods,
+    progressr,
+    purrr,
+    RColorBrewer,
+    rlang,
+    scales,
+    scatterpie,
+    Seurat (>= 5.1.0),
+    SeuratObject,
+    stats,
+    stringr,
+    tibble,
+    tidyr,
+    tidyfst
+Description: The R package to analyze potential crosstalk between (1) multiple regulatory pathways or (2) multiple sender cells induced by cell-cell communication (CCC) using spatial transcriptomics data.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
