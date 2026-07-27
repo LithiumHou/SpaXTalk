@@ -32,7 +32,7 @@ You may download or clone the SpaXTalk repository to your device and run:
 ```R
 if (!require("devtools", quietly = TRUE))
     install.packages("devtools") 
-devtools::install("/path/to/SpaXTalk") # Replace it with the path where you store the SigXTalk repository
+devtools::install("/path/to/SpaXTalk") # Replace it with the path where you store the SpaXTalk repository
 ```
 
 </details>
