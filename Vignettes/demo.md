@@ -8,13 +8,13 @@ library(dplyr)
 ```
 
 ## STEP 2: Load the spatial transcriptomics data
-An example dataset of mouse embryo Stereo-seq data is available [here]. 
+An example dataset of mouse embryo Stereo-seq data is available [here](https://drive.google.com/file/d/1Xo40BXmw7u1EVjvJ2RlYh30Xrky8mSAF/view?usp=drive_link). 
 
 This dataset is provided as a Seurat Object. For more information about the Seurat R package, please visit [here](https://satijalab.org/seurat/articles/get_started_v5_new).
 
 You can now load the data using the following code:
 ```
-SeuratObj <- readRDS("E:/Scomics/spatialXT/E95.RDS")
+SeuratObj <- readRDS("E:/Scomics/spatialXT/SpaXTalk_SampleData.RDS")
 ```
 
 ## STEP 3: Prepare the input of SpaXTalk
