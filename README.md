@@ -1,4 +1,5 @@
 ## About
+![Figure](/1.jpg)
 This directory contains the code and resources of the following paper: 
 Screening communication crosstalk in space
 
