@@ -23,7 +23,6 @@ Imports:
     grid,
     igraph,
     Matrix,
-    methods,
     progressr,
     purrr,
     RColorBrewer,
@@ -41,7 +40,7 @@ Description: The R package to analyze potential crosstalk between (1) multiple r
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
+Config/roxygen2/version: 8.1.0

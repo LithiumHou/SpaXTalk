@@ -1,0 +1,289 @@
+library(Seurat)
+library(ggplot2)
+library(dplyr)
+library(ggpubr)
+library(effsize)
+library(tidyr)
+
+SeuratObj <- readRDS("E:/Scomics/Feng/otherdata/sn_0104/sn_0104.rds")
+
+gene_set <- c("Acan", "Bcan", "Ncan", "Vcan","Hapln1", "Hapln4","Tnr","Ptprz1")   # replace with your gene set
+gene_use <- "Erbb4"                               # gene to plot against module score
+condition_col <- "Group"
+conditions_use <- c("HC", "EE")
+
+# Keep genes present in the object
+gene_set_use <- intersect(gene_set, rownames(SeuratObj))
+gene_use <- intersect(gene_use, rownames(SeuratObj))
+
+# Add module score
+SeuratObj <- AddModuleScore(
+  object = SeuratObj,
+  features = list(gene_set_use),
+  name = "GeneModuleScore"
+)
+
+# Subset 到 GABA cluster 单独做比较
+# AddModuleScore creates column GeneModuleScore1
+score_col <- "GeneModuleScore1"
+subobj <- subset(SeuratObj,celltype == "GABA")
+# Extract expression and module score
+df <- FetchData(
+  subobj,
+  vars = c(gene_use, score_col, condition_col)
+)
+
+colnames(df) <- c("gene_expr", "module_score", "condition")
+
+df <- df %>%
+  filter(condition %in% conditions_use)
+c(mean(df[df$condition == "HC","module_score"]), mean(df[df$condition == "EE","module_score"]))
+wilcox.test(gene_expr ~ condition, data = df)
+wilcox.test(module_score ~ condition, data = df)
+effsize::cohen.d(module_score ~ condition, data = df)
+
+ggplot(df, aes(x = gene_expr, y = module_score, color = condition)) +
+  geom_point(size = 1.2) +
+  geom_smooth(method = "lm", se = TRUE) +
+  facet_wrap(~condition, scales = "free") +
+  ylim(-0.23, 1)+
+  scale_color_manual(values = c("HC" = "#9bcac8", "EE" = "#ca94c3")) +
+  labs(
+    x = paste0(gene_use, " expression"),
+    y = "Gene module score",
+    color = "Condition"
+  ) +
+  theme_bw(base_size = 14) +
+  theme(legend.position = "none")+
+  theme(text = element_text(size = 18))
+ggsave("E:/Scomics/Feng/otherdata/sn_0104/0608/GeneModuleScore_GABA.pdf", width = 8,height = 5)
+
+df2 <- SeuratObj@meta.data
+ggplot(df2, aes(x = celltype, y = GeneModuleScore1, fill = Group)) +
+  # 半透明 violin 显示分布
+  geom_violin(position = position_dodge(0.8),
+              alpha = 0.55, scale = "width", trim = TRUE,
+              color = NA) +
+  # 内嵌 boxplot 显示中位数和四分位
+  geom_boxplot(position = position_dodge(0.8),
+               width = 0.15, outlier.shape = NA,
+               color = "grey30", alpha = 0.85) +
+  # 配色匹配 GA
+  scale_fill_manual(values = c("HC" = "#9bcac8", "EE" = "#ca94c3"),
+                    name = NULL) +
+  # 显著性标注（per cell type）
+  stat_compare_means(aes(group = Group),
+                     method = "wilcox.test",
+                     label = "p.signif",
+                     hide.ns = FALSE,
+                     label.y = max(df$GeneModuleScore1) * 1.05) +
+  labs(x = NULL, y = "PNN gene module score") +
+  theme_bw(base_size = 12) +
+  theme(
+    axis.text.x = element_text(angle = 0, hjust = 0.5),
+    legend.position = "top"
+  )+
+  theme(text = element_text(size = 18))
+ggsave("E:/Scomics/Feng/otherdata/sn_0104/0608/GeneModuleScore_all.pdf", width = 8,height = 6)
+
+df3 <- df2[df2$celltype == "GABA", ]
+t.test(GeneModuleScore1 ~ Group, data = df3)
+
+## Erbb4+ cells
+p_expr <- ggplot(df, aes(x = condition, y = gene_expr, fill = condition)) +
+  geom_violin(trim = F, alpha = 0.6, color = "black") +
+  ylim(0,7)+
+  geom_boxplot(width = 0.15, outlier.size = 0.3, color = "black") +
+  scale_fill_manual(values = c("HC" = "#9bcac8", "EE" = "#ca94c3")) +
+  xlab("") +
+  ylab("Erbb4 expression") +
+  theme_bw(base_size = 14) +
+  theme(legend.position = "none")+
+  theme(text = element_text(size = 18))
+
+df_pos <- df %>%
+  filter(gene_expr > 0)
+
+p_score_pos <- ggplot(df_pos, aes(x = condition, y = module_score, fill = condition)) +
+  geom_violin(trim = FALSE, alpha = 0.6, color = "black") +
+  geom_boxplot(width = 0.15, outlier.size = 0.3, color = "black") +
+  scale_fill_manual(values = c("HC" = "#9bcac8", "EE" = "#ca94c3")) +
+  xlab("") +
+  ylab("Module score in Erbb4+ cells") +
+  theme_bw(base_size = 14) +
+  theme(legend.position = "none")+
+  theme(text = element_text(size = 18))
+p_expr + p_score_pos
+ggsave("E:/Scomics/Feng/otherdata/sn_0104/0608/Erbb4_compare.pdf", width = 8,height = 6)
+
+## CDF of the score
+p2 <- ggplot(subobj@meta.data,
+             aes(x = GeneModuleScore1, color = Group)) +
+  stat_ecdf(linewidth = 2) +
+  scale_color_manual(values = c("HC" = "#9bcac8", "EE" = "#ca94c3")) +
+  labs(x = "PNN module score", y = "Cumulative fraction") +
+  theme(legend.position = "top")+
+  theme_bw(base_size = 12)
+
+# 加 KS test 结果
+ks <- ks.test(
+  subobj@meta.data$GeneModuleScore1[subobj@meta.data$Group == "HC"],
+  subobj@meta.data$GeneModuleScore1[subobj@meta.data$Group == "EE"]
+)
+p2 + annotate("text", x = quantile(subobj@meta.data$GeneModuleScore1, 0.85),
+    y = 0.4,
+    label = paste0("KS D = ", round(ks$statistic, 3),
+                   "\np = ", format(ks$p.value, scientific = TRUE)),
+    hjust = 0)+
+    theme(text = element_text(size = 18))
+ggsave("E:/Scomics/Feng/otherdata/sn_0104/0608/GeneModuleScore_CDF.pdf", width = 6,height = 6)
+
+# 重新 normalize + cluster GABA 细胞
+subobj <- NormalizeData(subobj) %>%
+  FindVariableFeatures() %>%
+  ScaleData() %>%
+  RunPCA(npcs = 20)
+subobj <- FindNeighbors(subobj, dims = 1:15) %>%
+  FindClusters(resolution = 0.1) %>%
+  RunUMAP(dims = 1:15)
+
+# 用 marker 注释 subcluster
+FeaturePlot(subobj, features = c("Pvalb", "Sst", "Vip", "Lamp5","Erbb4"),pt.size = .5)
+ggsave("E:/Scomics/Feng/otherdata/sn_0104/0608/subcluster_marker_GABA.pdf", width = 8,height = 6)
+DimPlot(subobj, reduction = "umap",pt.size = 1)
+ggsave("E:/Scomics/Feng/otherdata/sn_0104/0608/subcluster_GABA.pdf", width = 8,height = 6)
+
+VlnPlot(subobj, features = c("Pvalb", "Sst", "Vip", "Lamp5"))
+# 根据 marker 把 cluster ID 改成 subtype name
+subobj <- RenameIdents(subobj, 
+                      '0'="Pvalb_GABA",
+                      '1'="Sst_GABA",
+                      '2'="Vip_GABA",
+                      '3'="Lamp5_GABA",
+                      '4'="Other_GABA",
+                      '5'="Sst_GABA",
+                      '6'="Other_GABA",
+                      '7'="Sst_GABA",
+                      '8'="Other_GABA")
+subobj$gaba_subtype <- Idents(subobj) %>% as.character()
+# 然后画 split violin per subtype
+ggplot(subobj@meta.data,
+       aes(x = gaba_subtype, y = GeneModuleScore1, fill = Group)) +
+  geom_violin(position = position_dodge(0.8), alpha = 0.55) +
+  geom_boxplot(position = position_dodge(0.8), width = 0.15) +
+  scale_fill_manual(values = c("HC" = "#9bcac8", "EE" = "#ca94c3")) +
+  stat_compare_means(aes(group = Group), method = "wilcox.test",
+                     label = "p.signif") +
+  theme(legend.position = "top")+
+  theme_bw(base_size = 12)+
+  theme(text = element_text(size = 18))
+ggsave("E:/Scomics/Feng/otherdata/sn_0104/0608/subcluster_GABA_ModuleScore.pdf", width = 10,height = 6)
+
+# DEG of subtype
+pnn_genes <- c("Acan", "Bcan", "Ncan", "Vcan",
+               "Hapln1", "Hapln4", "Tnr", "Ptprz1")
+
+# Pseudobulk 每个基因
+pb <- AggregateExpression(subobj, group.by = "Group",
+                          features = pnn_genes,
+                          slot = "counts")$RNA
+
+# 算 log2 fold change
+log2fc <- log2((pb[, "EE"] + 1) / (pb[, "HC"] + 1))
+
+# 配合 per-gene Wilcoxon 算 p-value 然后做 heatmap
+# （也可以用 Seurat::FindMarkers 一步做掉）
+marker_pnn <- FindMarkers(subobj, ident.1 = "EE", ident.2 = "HC",
+                          group.by = "Group",
+                          features = pnn_genes,
+                          logfc.threshold = 0,
+                          min.pct = 0)
+print(marker_pnn)
+
+# Effective size
+df <- FetchData(
+  subobj,
+  vars = c(gene_use, score_col, condition_col)
+)
+colnames(df) <- c("gene_expr", "module_score", "condition")
+cohen.d(module_score ~ condition, data = df)
+
+# GABA only
+cohen.d(GeneModuleScore1 ~ Group, data = subobj@meta.data)
+
+# Pvalb subtype only (期望 effect 最大)
+pvalb <- subset(subobj, gaba_subtype == "Pvalb_GABA")
+cohen.d(GeneModuleScore1 ~ Group, data = pvalb@meta.data)
+
+# PVALB+ vs -
+gene <- "Pvalb"
+exp <- subobj@assays$RNA$counts[gene, ]
+pvalb_pos <- names(exp[exp>0])
+pvalb_neg <- names(exp[exp==0])
+df$Pvalb <- "Negative"
+df[pvalb_pos,"Pvalb"] <- "Positive"
+
+ggplot(df, aes(x = Pvalb, y = module_score, fill = condition)) +
+  geom_violin(
+    trim = FALSE,
+    alpha = 0.6,
+    color = "black",
+    position = position_dodge(width = 0.8)
+  ) +
+  geom_boxplot(
+    width = 0.15,
+    outlier.size = 0.3,
+    color = "black",
+    position = position_dodge(width = 0.8)
+  ) +
+  stat_compare_means(
+    aes(group = condition),
+    method = "t.test",
+    label = "p.signif",
+    hide.ns = FALSE
+  ) +
+  scale_fill_manual(values = c("HC" = "#9bcac8", "EE" = "#ca94c3")) +
+  xlab("") +
+  ylab("Module score in Erbb4+/- GABA") +
+  theme_bw(base_size = 14) +
+  theme(
+    legend.position = "top",
+    text = element_text(size = 18)
+  )
+
+SeuratObj$erbb4_status <- SeuratObj@assays$RNA$data["Erbb4", ] > 0
+meta_p <- SeuratObj@meta.data[SeuratObj$erbb4_status == T, ]
+meta_n <- SeuratObj@meta.data[SeuratObj$erbb4_status == F, ]
+
+wilcox.test(GeneModuleScore1 ~ Group, data = meta_p)
+wilcox.test(GeneModuleScore1 ~ Group, data = meta_n)
+
+ggplot(SeuratObj@meta.data, 
+       aes(x = Group, y = GeneModuleScore1, 
+           color = erbb4_status, group = erbb4_status)) +
+  stat_summary(fun = mean, geom = "point", size = 4) +
+  stat_summary(fun = mean, geom = "line", linewidth = 1.5) +
+  stat_summary(fun.data = mean_cl_boot, geom = "errorbar", 
+               width = 0.08, linewidth = 0.8) +
+  scale_color_manual(values = c("FALSE" = "#5D8AA8", 
+                                "TRUE" = "#E07856")) +
+  labs(y = "PNN module score", x = "",color = "Erbb4") +
+  theme_classic(base_size = 14) +
+  theme(legend.position = "top") +
+  theme(text = element_text(size = 18))
+
+delta_df <- SeuratObj@meta.data %>%
+  group_by(erbb4_status, Group) %>%
+  summarize(mean_score = mean(GeneModuleScore1), 
+            sem = sd(GeneModuleScore1)/sqrt(n())) %>%
+  pivot_wider(names_from = Group, values_from = c(mean_score, sem)) %>%
+  mutate(delta = mean_score_EE - mean_score_HC)
+ggplot(delta_df, aes(x = erbb4_status, y = delta, fill = erbb4_status)) +
+  geom_col(width = 0.4) +
+  labs(y ="Δ PNN score (EE − HC)" ,x="Erbb4")+
+  theme_bw(base_size = 14) +
+  theme(
+    legend.position = "none",
+    text = element_text(size = 18)
+  )
+

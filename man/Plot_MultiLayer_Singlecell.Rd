@@ -13,7 +13,7 @@ Plot_MultiLayer_Singlecell(
   start_trim = 0.1,
   end_trim = 0.1,
   arrow_len_cm = 0.15,
-  abs_value = False,
+  abs_value = TRUE,
   layer_fill_colors = NULL,
   border_darken_factor = 0.35,
   edge_width_range = c(0.4, 2.5),

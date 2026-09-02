@@ -9,6 +9,7 @@
 #' @param LR_used Optional character vector of ligand-receptor pairs to retain.
 #'
 #' @return An aggregated numeric matrix whose dimensions depend on `flag`.
+#' @export
 Aggr_CCC_results <- function(CCC_origin, flag = "Receiver", LR_used = NULL) {
 
     full_mat <- do.call(cbind, CCC_origin) %>% as.matrix()
@@ -63,6 +64,7 @@ Aggr_CCC_results <- function(CCC_origin, flag = "Receiver", LR_used = NULL) {
 #'
 #' @return A data frame containing `Gene`, `Cell`, `beta`, `Receptor`, and `TF`
 #'   columns.
+#' @export
 Process_GRN <- function(GRN_original, beta_thres = 0.005) {
 
     GRN_original$beta <- as.matrix(GRN_original$beta)
@@ -90,6 +92,7 @@ Process_GRN <- function(GRN_original, beta_thres = 0.005) {
 #'
 #' @return A data frame with cell, ligand, receptor, TF, communication score,
 #'   regulatory coefficient, and combined weight columns.
+#' @export
 Aggr_XT_results <- function(agg_df, GRN_filtered, threshold = 1e-4) {
     # agg_df: CCC df
     colnames(agg_df) <- c("Cell", "LR", "Value")

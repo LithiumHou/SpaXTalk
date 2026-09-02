@@ -1,8 +1,7 @@
 #' Prepare expression and spatial metadata
 #'
 #' Extract expression values, spatial coordinates, and cell annotations from a
-#' Seurat object and store the prepared data in the calling environment used by
-#' the SpaXTalk inference workflow.
+#' Seurat object for use in the SpaXTalk inference workflow.
 #'
 #' @param Object A Seurat object containing expression assays and cell metadata.
 #' @param receiver_cluster Optional character vector of annotation values to use
@@ -18,31 +17,52 @@
 #' @param filter_genes Logical; whether to remove hemoglobin, ribosomal, and
 #'   mitochondrial genes using built-in gene-name patterns.
 #'
-#' @return Invisibly returns `NULL`. As a side effect, assigns `exp_data`,
-#'   `meta`, and `receiver` in the calling workflow environment.
+#' @return A named list containing the gene-by-cell expression matrix `exp_data`,
+#'   standardized cell metadata `meta`, and receiver cell names `receiver`.
 #' @export
 Prepare_data <- function(Object, receiver_cluster = NULL, spacex_flag = "x",
                          spacey_flag = "y", cluster_flag = "annotation",
                          assay_type = "SCT", layer_type = "data",
                          filter_genes = FALSE) {
 
-    if (assay_type %in% names(Object@assays)) {
-        if (layer_type %in% slotNames(Object@assays[[assay_type]])) {
-            data_raw <- GetAssayData(Object, assay = assay_type, layer = layer_type)
-        } else {
-            data_raw <- GetAssayData(Object, assay = assay_type, layer = "counts")
-        }
+    available_assays <- names(Object@assays)
+    if (assay_type %in% available_assays) {
+        assay_used <- assay_type
+    } else if ("RNA" %in% available_assays) {
+        assay_used <- "RNA"
     } else {
-        if (layer_type %in% slotNames(Object@assays[[assay_type]])) {
-            data_raw <- GetAssayData(Object, assay = "RNA", layer = layer_type)
-        } else {
-            data_raw <- GetAssayData(Object, assay = "RNA", layer = "counts")
-        }
+        stop(
+            "Neither assay `", assay_type, "` nor fallback assay `RNA` exists.",
+            call. = FALSE
+        )
     }
+
+    available_layers <- SeuratObject::Layers(Object[[assay_used]])
+    if (layer_type %in% available_layers) {
+        layer_used <- layer_type
+    } else if ("counts" %in% available_layers) {
+        layer_used <- "counts"
+    } else {
+        stop(
+            "Neither layer `", layer_type, "` nor fallback layer `counts` exists ",
+            "in assay `", assay_used, "`.",
+            call. = FALSE
+        )
+    }
+    data_raw <- GetAssayData(Object, assay = assay_used, layer = layer_used)
     genes_raw <- rownames(data_raw)
 
     meta <- Object@meta.data
-    meta <- meta[, c(spacex_flag, spacey_flag, cluster_flag)]
+    metadata_columns <- c(spacex_flag, spacey_flag, cluster_flag)
+    missing_columns <- setdiff(metadata_columns, colnames(meta))
+    if (length(missing_columns) > 0) {
+        stop(
+            "Missing required metadata columns: ",
+            paste(missing_columns, collapse = ", "),
+            call. = FALSE
+        )
+    }
+    meta <- meta[, metadata_columns, drop = FALSE]
     colnames(meta) <- c("x", "y", "annotation")
 
     if (filter_genes) {
@@ -53,13 +73,14 @@ Prepare_data <- function(Object, receiver_cluster = NULL, spacex_flag = "x",
         genes_filtered <- genes_raw
     }
 
-    exp_data <<- data_raw[genes_filtered, ]
-    meta <<- meta
+    exp_data <- data_raw[genes_filtered, , drop = FALSE]
     if (!is.null(receiver_cluster)) {
-        receiver <<- filter(meta, annotation %in% receiver_cluster) %>% rownames()
+        receiver <- rownames(meta)[meta$annotation %in% receiver_cluster]
     } else {
-        receiver <<- rownames(meta)
+        receiver <- rownames(meta)
     }
+
+    list(exp_data = exp_data, meta = meta, receiver = receiver)
 }
 
 #' Identify spatial neighbors

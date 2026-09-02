@@ -6,6 +6,7 @@
 #' @param n Integer number of colors to generate.
 #'
 #' @return A character vector of `n` color values.
+#' @export
 scPalette <- function(n) {
     colorSpace <- c(
         '#E41A1C', '#377EB8', '#4DAF4A', '#984EA3', '#F29403', '#F781BF',
@@ -39,6 +40,7 @@ scPalette <- function(n) {
 #'   active observations.
 #'
 #' @return A `ggplot` object showing the variable in spatial coordinates.
+#' @export
 PlotSpa_Scatter <- function(data, meta, colors = NULL, pt_size = 4,
     legend_name = "Specificity", plot_zero = FALSE) {
 
@@ -125,6 +127,7 @@ PlotSpa_Scatter <- function(data, meta, colors = NULL, pt_size = 4,
 #' @param cell_palette Optional named vector mapping annotations to colors.
 #'
 #' @return A `ggplot` object showing focal cells and their spatial neighborhoods.
+#' @export
 PlotSpa_neighbor <- function(
     meta,
     cell_names,
@@ -274,6 +277,7 @@ PlotSpa_neighbor <- function(
 #' @param colors Optional vector of colors for the strength gradient.
 #'
 #' @return A `ggplot` object containing communication vectors.
+#' @export
 PlotSpa_SRVector <- function(data, meta, threshold = 0.02, local = F, colors = NULL) {
 
     # data: Sender to Receiver matrix
@@ -346,6 +350,7 @@ PlotSpa_SRVector <- function(data, meta, threshold = 0.02, local = F, colors = N
 #' @param target_type Character scalar naming the receiving annotation.
 #'
 #' @return A `ggplot` object showing aggregated sender-to-target communication.
+#' @export
 PlotSpa_SenderLRCircle <- function(data, meta, features, target_type) {
 
     # data: Sender * LR
@@ -434,8 +439,8 @@ PlotSpa_SenderLRCircle <- function(data, meta, features, target_type) {
 #' @param vertical Logical orientation setting passed to the plotting workflow.
 #'
 #' @return The object returned by `alluvial::alluvial()`.
+#' @export
 PlotXT_Alluvial <- function(results, features = NULL, topk = 20, vertical = T) {
-    require(alluvial)
     colnames(results) <- c("Regulator", "Mediator", "Target", "Weight")
     if (is.null(features)) {
         features <- unique(results$Target)
@@ -443,10 +448,14 @@ PlotXT_Alluvial <- function(results, features = NULL, topk = 20, vertical = T) {
     CC_used <- results[results$Target %in% features, ]
     CC_used <- CC_used[order(CC_used$Weight, decreasing = T), ]
     topk <- min(topk, nrow(CC_used))
-    XT_toplot <- CC_used[1:topk, ]
+    if (topk < 1) {
+        stop("No relationships remain after filtering `results`.", call. = FALSE)
+    }
+    XT_toplot <- CC_used[seq_len(topk), , drop = FALSE]
+    uf <- unique(XT_toplot$Regulator)
     cols <- scPalette(length(uf))
     col_map <- setNames(cols, uf)
-    feature_colors <- col_map[XT_toplot$Ligand]
+    feature_colors <- col_map[XT_toplot$Regulator]
     p <- alluvial::alluvial(XT_toplot[, 1:3], gap.width = 0.02, xw = 0.2, cw = 0.2,
         freq = XT_toplot$Weight, border = NA, alpha = 0.75,
         col = feature_colors)
@@ -469,6 +478,7 @@ PlotXT_Alluvial <- function(results, features = NULL, topk = 20, vertical = T) {
 #' @param colors_grad Optional vector of colors for the ratio gradient.
 #'
 #' @return A `ggplot` object showing the pathway activity ratio in space.
+#' @export
 PlotSpa_Comparison <- function(XT_results, path1, path2, meta,
     path_flag = "RT", value_flag = "XT", sep = "=",
     colors_grad = NULL) {
@@ -535,6 +545,7 @@ PlotSpa_Comparison <- function(XT_results, path1, path2, meta,
 #' @param pt_size Numeric point size.
 #'
 #' @return A `ggplot` object showing the pathway comparison in space.
+#' @export
 PlotSpa_Comparison2 <- function(CCC_mat, path1, path2, meta, mode = "ratio", pt_size = 3) {
     x <- CCC_mat[, path1]
     y <- CCC_mat[, path2]
@@ -582,15 +593,17 @@ PlotSpa_Comparison2 <- function(CCC_mat, path1, path2, meta, mode = "ratio", pt_
 #' @param topk Integer maximum number of rows and columns to display.
 #'
 #' @return A `ComplexHeatmap::Heatmap` object.
+#' @export
 PlotXT_Heatmap <- function(results, features = NULL, feature_flag = "Target", topk = 999) {
-
-    require(ComplexHeatmap)
     colnames(results) <- c("Regulator", "Mediator", "Target", "Weight")
     other_cols <- setdiff(colnames(results), feature_flag)
     if (!is.null(features)) {
         results_TG <- results[results[[feature_flag]] %in% features, ]
     } else {
         results_TG <- results
+    }
+    if (nrow(results_TG) == 0) {
+        stop("No relationships remain after filtering `results`.", call. = FALSE)
     }
 
     results_aggr <- aggregate(
@@ -613,9 +626,11 @@ PlotXT_Heatmap <- function(results, features = NULL, feature_flag = "Target", to
     topk_used <- min(topk, nrow(temp_mat2))
     temp_mat2 <- temp_mat2[1:topk_used, ]
     # row (receptor) annotation
-    ra = rowAnnotation(Fid = anno_boxplot((temp_mat2 / sum(temp_mat2)), height = unit(4, "cm")))
+    ra <- rowAnnotation(
+        Fid = anno_boxplot(temp_mat2 / sum(temp_mat2), height = unit(4, "cm"))
+    )
     # column (TF) annotation
-    ha = HeatmapAnnotation(
+    ha <- HeatmapAnnotation(
         Fid = anno_boxplot(
             temp_mat2 / sum(temp_mat2), which = 'column', height = unit(4, "cm")
         )
@@ -639,19 +654,21 @@ PlotXT_Heatmap <- function(results, features = NULL, feature_flag = "Target", to
 #' @param topk Integer maximum number of signals to display.
 #'
 #' @return A `ggplot` bar chart of dominant signals.
+#' @export
 Plot_DominantLR <- function(results, flag = "LR", topk = 20) {
 
     # results could either be CCC_receiver or CCC_sender
 
+    flag <- match.arg(flag, c("LR", "Ligand", "Receptor"))
     Ligands <- sub("=.*", "", colnames(results))
     Receptors <- sub(".*=", "", colnames(results))
     if (flag == "Ligand") {
         CCC_sum_LR <- rowsum(t(results), group = Ligands) %>% rowSums()
-        df <- data.frame(Signal = Ligands, Strength = CCC_sum_LR)
+        df <- data.frame(Signal = names(CCC_sum_LR), Strength = CCC_sum_LR)
     }
     if (flag == "Receptor") {
         CCC_sum_LR <- rowsum(t(results), group = Receptors) %>% rowSums()
-        df <- data.frame(Signal = Receptors, Strength = CCC_sum_LR)
+        df <- data.frame(Signal = names(CCC_sum_LR), Strength = CCC_sum_LR)
     }
     if (flag == "LR") {
         CCC_sum_LR <- colSums(results)
@@ -659,8 +676,11 @@ Plot_DominantLR <- function(results, flag = "LR", topk = 20) {
     }
 
     topk <- min(topk, nrow(df))
+    if (topk < 1) {
+        stop("`results` does not contain any signals to plot.", call. = FALSE)
+    }
     df <- df[order(df$Strength, decreasing = T), ]
-    df <- df[1:topk, ]
+    df <- df[seq_len(topk), , drop = FALSE]
     df <- df %>% mutate(Signal = fct_reorder(Signal, Strength))
 
     p <- ggplot(
@@ -697,6 +717,7 @@ Plot_DominantLR <- function(results, flag = "LR", topk = 20) {
 #' @param alpha_others Numeric alpha for other cells.
 #'
 #' @return A `ggplot` object with spatially positioned composition pies.
+#' @export
 PlotSpa_Scatterpie <- function(cluster_results, meta, pie_disp = "signal", topk = 5,
     pie_r = 5, size_target = 3, size_others = 2, alpha_target = 0.6, alpha_others = 0.3) {
 
@@ -807,6 +828,7 @@ PlotSpa_Scatterpie <- function(cluster_results, meta, pie_disp = "signal", topk 
 #' @param label_max Optional numeric radial maximum used to position labels.
 #'
 #' @return A `ggplot` circular bar chart.
+#' @export
 PlotXT_MultiCircularBar <- function(df, KeyFactors = NULL, topk = 5, label_max = NULL) {
 
     colnames(df) <- c("individual", "group", "Specificity")
@@ -932,6 +954,7 @@ PlotXT_MultiCircularBar <- function(df, KeyFactors = NULL, topk = 5, label_max =
 #'
 #' @return Invisibly returns the result of the final `circlize` drawing call and
 #'   draws the chord diagram on the active graphics device.
+#' @export
 PlotXT_Chord <- function(mat, orders = NULL, edge_colors = NULL) {
 
     if (is.null(orders)) {
@@ -986,6 +1009,7 @@ PlotXT_Chord <- function(mat, orders = NULL, edge_colors = NULL) {
 #' @param topk_Rec Integer number of dominant mediators assigned distinct colors.
 #'
 #' @return A `ggplot` bubble heatmap.
+#' @export
 Plot_BubbleHeatmap <- function(results, thresh_quantile = 0.95, topk_Rec = 5) {
 
     # result: XT_result aggregated by cells
@@ -1048,6 +1072,7 @@ Plot_BubbleHeatmap <- function(results, thresh_quantile = 0.95, topk_Rec = 5) {
 #' @param nlines Integer contour-resolution setting retained for compatibility.
 #'
 #' @return A `ggplot` object showing the spatial activity surface.
+#' @export
 PlotSpa_Contour <- function(results, meta, target = NULL, logscale = T, nlines = 10) {
 
     if (is.null(target)) {
@@ -1055,35 +1080,38 @@ PlotSpa_Contour <- function(results, meta, target = NULL, logscale = T, nlines =
     } else {
         target <- intersect(target, colnames(results))
     }
-    results_filtered <- results[, target] %>% as.data.frame()
-    if (ncol(results_filtered) > 1) {
-        results_filtered <- rowSums(results_filtered)
+    if (length(target) == 0) {
+        stop("No requested `target` columns were found in `results`.", call. = FALSE)
     }
-    rownames(results_filtered) <- rownames(results)
+    results_filtered <- results[, target, drop = FALSE] %>% as.data.frame()
+    if (ncol(results_filtered) > 1) {
+        values <- rowSums(results_filtered)
+    } else {
+        values <- results_filtered[[1]]
+    }
+    names(values) <- rownames(results_filtered)
     df <- meta
     df$Value <- 0
-    df[rownames(results_filtered), "Value"] <- results_filtered[, 1]
+    cells <- intersect(names(values), rownames(df))
+    df[cells, "Value"] <- values[cells]
     if (logscale) {
         df$Value <- log1p(df$Value)
     }
     df$Value[is.na(df$Value)] <- 0
     df$Value[is.infinite(df$Value)] <- 0
 
-    colormap <- rev(RColorBrewer::brewer.pal(n = nlines + 1, name = "Spectral"))
-    breaks_lines <- seq(min(df$Value), max(df$Value), by = (max(df$Value) - min(df$Value)) / nlines)
     p <- ggplot(data = df) +
         geom_raster(aes(x = x, y = y, fill = Value)) +
-        scale_fill_viridis_c()
-    # scale_color_gradientn(colours=colormap)+
-    # geom_contour()+
-    theme_bw()+
-        theme(text = element_text(family = "Arial", size = 24))+
-        theme(panel.grid.major.x = element_line(color = "grey85"),
+        scale_fill_viridis_c() +
+        theme_bw() +
+        theme(
+            panel.grid.major.x = element_line(color = "grey85"),
             panel.grid.minor.x = element_blank(),
             panel.grid.major.y = element_blank(),
             axis.title = element_blank(),
             legend.position = "top",
-            text = element_text(family = "Arial", size = 24))
+            text = element_text(family = "Arial", size = 24)
+        )
     return(p)
 }
 
@@ -1111,6 +1139,7 @@ PlotSpa_Contour <- function(results, meta, target = NULL, logscale = T, nlines =
 #' @param show_layer_legend Logical; whether to show the layer fill legend.
 #'
 #' @return A `ggplot` object showing multilayer signaling paths.
+#' @export
 Plot_MultiLayer_Singlecell <- function(
     XT_filtered,
     x_scale = 1.0, # horizontal spacing within each layer
@@ -1121,7 +1150,7 @@ Plot_MultiLayer_Singlecell <- function(
     end_trim = 0.1, # shorten arrow at target (in y units)
     arrow_len_cm = 0.15,
 # whether use absolute value
-    abs_value = False,
+    abs_value = TRUE,
 # styling
     layer_fill_colors = NULL, # named vector with names matching layer_levels; if NULL, auto
     border_darken_factor = 0.35, # 0..1, larger => darker border
@@ -1133,8 +1162,11 @@ Plot_MultiLayer_Singlecell <- function(
     show_layer_legend = TRUE      # if FALSE, hide fill legend too
 ) {
 
-    layer_levels = c("Target", "Receptor", "Ligand")
-    XT_filtered$beta <- abs(XT_filtered$beta)
+    layer_levels <- c("Target", "Receptor", "Ligand")
+    if (isTRUE(abs_value)) {
+        XT_filtered$Value <- abs(XT_filtered$Value)
+        XT_filtered$beta <- abs(XT_filtered$beta)
+    }
     edge1 <- data.frame(from_name = XT_filtered$Ligand,
         from_layer = "Ligand",
         to_name = XT_filtered$Receptor,
@@ -1316,6 +1348,7 @@ Plot_MultiLayer_Singlecell <- function(
 #' @param no_communication_alpha Numeric alpha for inactive sender cells.
 #'
 #' @return A `ggplot` object showing local signaling around the receiver.
+#' @export
 Plot_Signaling_Radial <- function(
     CCC_mat,
     meta,
@@ -1569,6 +1602,7 @@ Plot_Signaling_Radial <- function(
 #' @param point_size Numeric point size.
 #'
 #' @return A `ggplot` volcano plot.
+#' @export
 Plot_GRNVolcano <- function(
     df1, df2,
     min_cells_per_group = 10,
@@ -1726,6 +1760,7 @@ Plot_GRNVolcano <- function(
 #' @param legend_position Legend position passed to the plot theme.
 #'
 #' @return A `ggraph` plot object.
+#' @export
 Plot_EdgeBundle <- function(df, source_color = "#0072B2",
     target_color = "#D55E00",
     edge_colors = c("lightgray", "yellow", "red"),
@@ -1794,6 +1829,7 @@ Plot_EdgeBundle <- function(df, source_color = "#0072B2",
 #' @param topk Integer maximum number of paths to display.
 #'
 #' @return A `ggplot` tile heatmap.
+#' @export
 Plot_FidSpe <- function(Aggr_XT_results, feature, mode = "Spe", topk = 20) {
 
     if (mode == "Spe") {

@@ -13,5 +13,10 @@ cell-cell communication signals and how they vary across space
 \author{
 \strong{Maintainer}: Jiawen Hou \email{lithiumhou@gmail.com}
 
+Authors:
+\itemize{
+  \item Jiawen Hou \email{lithiumhou@gmail.com}
+}
+
 }
 \keyword{internal}

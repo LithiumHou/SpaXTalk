@@ -38,11 +38,10 @@ column.}
 mitochondrial genes using built-in gene-name patterns.}
 }
 \value{
-Invisibly returns \code{NULL}. As a side effect, assigns \code{exp_data},
-\code{meta}, and \code{receiver} in the calling workflow environment.
+A named list containing the gene-by-cell expression matrix \code{exp_data},
+standardized cell metadata \code{meta}, and receiver cell names \code{receiver}.
 }
 \description{
 Extract expression values, spatial coordinates, and cell annotations from a
-Seurat object and store the prepared data in the calling environment used by
-the SpaXTalk inference workflow.
+Seurat object for use in the SpaXTalk inference workflow.
 }
