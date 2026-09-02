@@ -40,4 +40,4 @@ devtools::install("/path/to/SpaXTalk") # Replace it with the path where you stor
 
 ## How to use SpaXTalk?
 
-We provide a step-by-step tutorial to show the functionality of SpaXTalk [here].
+We provide a step-by-step tutorial to show the functionality of SpaXTalk [here](https://github.com/LithiumHou/SpaXTalk/blob/main/Vignettes/demo.md).
