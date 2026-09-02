@@ -1,4 +1,0 @@
-library(Seurat)
-
-SeuratObj <- readRDS("E:/Scomics/spatialXT/E95.RDS")
-meta <- SeuratObj@meta.data
