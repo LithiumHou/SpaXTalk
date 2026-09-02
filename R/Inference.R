@@ -300,7 +300,9 @@ InferCCC <- function(data, neighbor_list, LRDB, ligands = NULL,
             receptor_exp <- data[LRDB_filtered$To, x]
             receptor_exp[is.na(receptor_exp)] <- 0
 
-            LR_mat <- t(t(ligand_exp) * as.vector(decay_vector)) * receptor_exp
+            LR_mat <- Matrix::t(
+              Matrix::t(ligand_exp) * as.vector(decay_vector)
+            ) * receptor_exp
             rownames(LR_mat) <- paste0(LRDB_filtered$From, "=", LRDB_filtered$To)
             colnames(LR_mat) <- paste0(names(decay_vector), "=", x)
         } else {
@@ -383,7 +385,7 @@ InferGRN <- function(exps, neighbor_list, RTDB = NULL, Target_list = NULL,
     }
     data_used <- exps[allgenes, allcells]
     data_used <- data_used[
-        rowSums(data_used[, receivers] > 0) > exp_thres * length(receivers),
+        Matrix::rowSums(data_used[, receivers] > 0) > exp_thres * length(receivers),
     ]
     # c(nrow(exps), nrow(data_used))
     RTDB_used <- filter(RTDB, From %in% rownames(data_used))

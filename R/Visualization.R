@@ -283,7 +283,7 @@ PlotSpa_SRVector <- function(data, meta, threshold = 0.02, local = F, colors = N
     # data: Sender to Receiver matrix
     senders <- rownames(data)
     non_senders <- setdiff(rownames(meta), senders)
-    data_used <- rowSums(data)
+    data_used <- Matrix::rowSums(data)
     sender_id <- max.col(data, ties.method = "first")
     receiver_of_sender <- colnames(data)[sender_id]
 
@@ -372,7 +372,7 @@ PlotSpa_SenderLRCircle <- function(data, meta, features, target_type) {
     color_use = scPalette(length(all_types))
     names(color_use) <- all_types
 
-    data_used <- rowSums(data[, features])
+    data_used <- Matrix::rowSums(data[, features, drop = FALSE])
     df <- meta
     df$color <- color_use[df$annotation]
     df$value <- 0
@@ -662,16 +662,17 @@ Plot_DominantLR <- function(results, flag = "LR", topk = 20) {
     flag <- match.arg(flag, c("LR", "Ligand", "Receptor"))
     Ligands <- sub("=.*", "", colnames(results))
     Receptors <- sub(".*=", "", colnames(results))
+    LR_strength <- Matrix::colSums(results)
     if (flag == "Ligand") {
-        CCC_sum_LR <- rowsum(t(results), group = Ligands) %>% rowSums()
+        CCC_sum_LR <- tapply(LR_strength, Ligands, sum)
         df <- data.frame(Signal = names(CCC_sum_LR), Strength = CCC_sum_LR)
     }
     if (flag == "Receptor") {
-        CCC_sum_LR <- rowsum(t(results), group = Receptors) %>% rowSums()
+        CCC_sum_LR <- tapply(LR_strength, Receptors, sum)
         df <- data.frame(Signal = names(CCC_sum_LR), Strength = CCC_sum_LR)
     }
     if (flag == "LR") {
-        CCC_sum_LR <- colSums(results)
+        CCC_sum_LR <- LR_strength
         df <- data.frame(Signal = names(CCC_sum_LR), Strength = CCC_sum_LR)
     }
 
@@ -960,9 +961,10 @@ PlotXT_Chord <- function(mat, orders = NULL, edge_colors = NULL) {
     if (is.null(orders)) {
         orders <- c(rownames(mat), colnames(mat))
     }
+    mat_transposed <- as.matrix(Matrix::t(mat))
     circos.clear()
     if (is.null(edge_colors)) {
-        chordDiagram(t(mat),
+        chordDiagram(mat_transposed,
             transparency = 0.25,
             order = orders,
             big.gap = 30,
@@ -971,7 +973,7 @@ PlotXT_Chord <- function(mat, orders = NULL, edge_colors = NULL) {
             preAllocateTracks = 1    # Reserve space for labels
         )
     } else {
-        chordDiagram(t(mat),
+        chordDiagram(mat_transposed,
             col = edge_colors,
             transparency = 0.25,
             order = orders,

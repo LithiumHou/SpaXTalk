@@ -2,5 +2,9 @@
 .RData
 .Ruserdata
 .DS_Store
+.Rproj.user
 data-raw/private/
 check/
+inst/doc
+vignettes/*.html
+vignettes/*.R
