@@ -27,6 +27,7 @@ exp_data <- SeuratObject::GetAssayData(
     layer = "data"
 )
 meta_all <- SeuratObj@meta.data
+rownames(meta_all) <- colnames(exp_data)
 meta <- data.frame(
     x = meta_all$x,
     y = meta_all$y,
@@ -36,7 +37,7 @@ meta <- data.frame(
 )
 
 # Specify the receiver population of interest.
-receiver <- rownames(meta)[meta$annotation %in% "Neural crest"]
+receiver <- rownames(meta)[meta$annotation %in% "Neural_crest"]
 ```
 If you use a Seurat Object to store the data, you may alternatively use the following command to generate all the input data you need.
 ```r
