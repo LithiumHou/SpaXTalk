@@ -145,11 +145,8 @@ allresults <- list(
   CCC = CCC_origin,
   GRN = GRNs
 )
-```
 
 # Save the results (optional).
-
-```
 saveRDS(allresults, "SpaXTalk_results.rds")
 ```
 
