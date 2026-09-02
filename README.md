@@ -12,7 +12,7 @@ SpaXTalk is a statistical-learning approach that use spatial transcriptomics (ST
 ## How to install SpaXTalk?
 R >= 4.3.1 is required to correctly install SpaXTalk and other dependencies. We strongly suggest that you use RStudio to install and run SpaXTalk!
 
-To install the SpaXTalk R package, you may either install from remote or from local.
+To install the SpaXTalk R package, you may either install from remote or from local. The installation takes ~2 minutes on a normal PC
 <details>
   <summary>OPTION 1: remote installation</summary>
 
@@ -31,13 +31,11 @@ Note: using `devtools::install_github` in Rstudio sometimes causes a github's to
 You may download or clone the SpaXTalk repository to your device and run:
   
 ```R
-if (!require("devtools", quietly = TRUE))
-    install.packages("devtools") 
-devtools::install("/path/to/SpaXTalk") # Replace it with the path where you store the SpaXTalk repository
+install.packages(package_file,repos = NULL,type = "source")   # Replace package file with the path where you store the SpaXTalk repository
 ```
 
 </details>
 
 ## How to use SpaXTalk?
 
-We provide a step-by-step tutorial to show the functionality of SpaXTalk [here].
+We provide a step-by-step tutorial to show the functionality of SpaXTalk [here](https://github.com/LithiumHou/SpaXTalk/blob/main/Vignettes/demo.md).
