@@ -48,6 +48,7 @@ containing x coordinates, y coordinates, and cell annotations. By
 default, the tutorial assumes these values are stored in the `x`, `y`,
 and `annotation` metadata columns, respectively.
 
+#### Option 1
 ``` r
 exp_data <- SeuratObject::GetAssayData(
   SeuratObj,
@@ -71,6 +72,7 @@ receiver <- rownames(meta)[meta$annotation %in% "Neural_crest"]
 rm(SeuratObj)
 ```
 
+#### Option 2
 Alternatively, for data stored in a Seurat object, `Prepare_data()` can
 generate the required inputs directly:
 
@@ -141,11 +143,12 @@ GRNs <- InferGRN(
 
 betas <- GRNs$beta
 
-# Save the results (optional).
 allresults <- list(
   CCC = CCC_origin,
   GRN = GRNs
 )
+
+# Save the results (optional).
 saveRDS(allresults, "SpaXTalk_results.rds")
 ```
 
@@ -153,9 +156,9 @@ saveRDS(allresults, "SpaXTalk_results.rds")
 
 ``` r
 # Calculate the crosstalk.
-CCC_mat <- Aggr_CCC_results(CCC_origin, flag = "Sender")
+CCC_mat <- Aggr_CCC_results(allresults$CCC, flag = "Sender")
 CCC_df <- tidyfst::mat_df(CCC_mat)
-GRN_filtered <- Process_GRN(betas, beta_thres = 1e-5)
+GRN_filtered <- Process_GRN(allresults$GRN, beta_thres = 1e-5)
 XT_results <- Aggr_XT_results(CCC_df, GRN_filtered, threshold = 1e-8)
 ```
 
