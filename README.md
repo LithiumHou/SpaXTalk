@@ -31,7 +31,7 @@ Note: using `devtools::install_github` in Rstudio sometimes causes a github's to
 You may download or clone the SpaXTalk repository to your device and run:
   
 ```R
-install.packages(package_file,repos = NULL,type = "source")  # Replace package file with the path where you store the SpaXTalk repository
+install.packages(package_file,repos = NULL,type = "source")   # Replace package file with the path where you store the SpaXTalk repository
 ```
 
 </details>
