@@ -38,4 +38,4 @@ install.packages(package_file,repos = NULL,type = "source")   # Replace package 
 
 ## How to use SpaXTalk?
 
-We provide a step-by-step tutorial to show the functionality of SpaXTalk [here](https://github.com/LithiumHou/SpaXTalk/blob/main/Vignettes/demo.md).
+We provide a step-by-step tutorial to show the functionality of SpaXTalk [here](https://github.com/LithiumHou/SpaXTalk/blob/main/vignettes/demo.md).
