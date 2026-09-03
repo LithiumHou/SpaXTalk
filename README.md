@@ -12,6 +12,12 @@ SpaXTalk is a statistical-learning approach that use spatial transcriptomics (ST
 ## How to install SpaXTalk?
 R >= 4.3.1 is required to correctly install SpaXTalk and other dependencies. We strongly suggest that you use RStudio to install and run SpaXTalk!
 
+### Install dependencies
+Some dependencies cannot be installed from CRAN and need to be installed manually:
+```R
+BiocManager::install("ComplexHeatmap")
+```
+
 To install the SpaXTalk R package, you may either install from remote or from local. The installation takes ~2 minutes on a normal PC
 <details>
   <summary>OPTION 1: remote installation</summary>
